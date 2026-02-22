@@ -62,6 +62,9 @@ case $OPCION_IA in
         PICO_KEY="$NUEVO_GROQ"
         DISABLE_TOOLS="false"
         
+        # Detener IA Local para liberar RAM si estuviese corriendo
+        sudo systemctl stop llamacpp 2>/dev/null || true
+        
         # Actualizamos la memoria
         sudo sed -i '/^GROQ_KEY=/d' /root/.picoclaw_installer_vars.env 2>/dev/null || true
         echo "GROQ_KEY=\"$NUEVO_GROQ\"" | sudo tee -a /root/.picoclaw_installer_vars.env >/dev/null
@@ -73,6 +76,9 @@ case $OPCION_IA in
         PICO_URL="$NUEVO_URL"
         PICO_KEY="local-key-no-necesaria"
         DISABLE_TOOLS="true"
+        
+        # Arrancar IA Local si estaba detenida
+        sudo systemctl start llamacpp 2>/dev/null || true
         
         # Actualizamos la memoria
         sudo sed -i '/^OLLAMA_URL=/d' /root/.picoclaw_installer_vars.env 2>/dev/null || true

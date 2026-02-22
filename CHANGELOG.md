@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.3] - 2026-02-22
+### Changed
+- **AI/Cognitive Optimizations for RPi 3B**:
+  - `PicoClawRPIInstaller.sh`: Limited `max_tokens` from 8192 to 1024 to prevent 1-hour generation thermal runaways.
+  - `PicoClawRPIInstaller.sh`: Softened `system_prompt` default to allow JSON/XML parsing, enabling Agentic behaviors.
+  - `PicoJarvisLocalAI.sh`: Drastically reduced local `-c context` from 4096 to 2048 to save ~200MB of static RAM and prevent memory swaps.
+  - `PicoJarvisAISwitch.sh`: Automatically stops/starts the `llamacpp` systemd service when switching between Cloud and Local, fully releasing local RAM when not in use.
+
+## [1.1.2] - 2026-02-22
+### Changed
+- Fixed Race Condition zero-day vulnerabilities in file creations across all scripts avoiding token leakage on `/tmp` and other temp files.
+
+## [1.1.1] - 2026-02-22
+### Changed
+- Improved overall security mechanisms by patching input injections in IPs and subnet masks, reducing UFW attack surface, and restricting `gpg` sudoers rules to only root.
+
 ## [1.1.0] - 2026-02-22
 ### Added
 - `PicoClawMenu.sh`: Interactive execution menu to guide users safely through the deployment process in the optimal order.

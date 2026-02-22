@@ -169,8 +169,8 @@ if ! check_step "configuracion"; then
     "defaults": {
       "workspace": "~/.picoclaw/workspace",
       "model": "$MODELO_POR_DEFECTO",
-      "system_prompt": "Responde SIEMPRE en texto plano y directo en español. NUNCA uses formato JSON, XML ni etiquetas como <message>. Actúa como un asistente humano natural.",
-      "max_tokens": 8192,
+      "system_prompt": "Responde SIEMPRE en texto plano y directo en español. Eres un asistente experto en Linux y ciberseguridad. Puedes usar herramientas u opciones avanzadas si se requieren.",
+      "max_tokens": 1024,
       "temperature": 0.7,
       "max_tool_iterations": 20
     }

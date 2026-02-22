@@ -180,8 +180,8 @@ User=$APP_USER
 Group=$APP_USER
 WorkingDirectory=$INSTALL_DIR
 Environment="HOME=/home/$APP_USER"
-# Hilo limitado (threads=3 en RPi3, context=4096, parallel=1) para no quemar la placa
-ExecStart=$INSTALL_DIR/build/bin/llama-server -m $MODEL_DIR/$MODEL_NAME -c 4096 --host 0.0.0.0 --port 11434 -t 3
+# Hilo limitado (threads=3 en RPi3, context=2048, parallel=1) para no quemar la placa
+ExecStart=$INSTALL_DIR/build/bin/llama-server -m $MODEL_DIR/$MODEL_NAME -c 2048 --host 0.0.0.0 --port 11434 -t 3
 Restart=always
 RestartSec=10
 
