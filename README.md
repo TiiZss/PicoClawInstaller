@@ -2,7 +2,7 @@
 
 # 🤖 PicoClawInstaller 🤖
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/TiiZss/PicoClawInstaller/releases)
+[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](https://github.com/TiiZss/PicoClawInstaller/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Bash Shell](https://img.shields.io/badge/language-bash-4EAA25.svg?logo=gnu-bash&logoColor=white)](https://www.gnu.org/software/bash/)
 [![Platform](https://img.shields.io/badge/platform-Raspberry_Pi_3B-C51A4A?logo=raspberry-pi&logoColor=white)](https://www.raspberrypi.org/)
@@ -61,6 +61,15 @@ cd PicoClawInstaller
 chmod +x PicoClawMenu.sh
 ./PicoClawMenu.sh
 ```
+
+El menú te guiará por el siguiente flujo recomendado:
+1.  **Hardenizar Sistema**: Desactiva el acceso por contraseña y asegura SSH.
+2.  **Configurar Baneo Progresivo**: Despliega Fail2Ban para repeler ataques.
+3.  **Instalar IA Local y SDK**: Compila Llama.cpp y prepara el motor de voz Picovoice.
+4.  **Instalar PicoClaw**: Despliega el bot y el servicio Systemd.
+5.  **Configurar Entorno (Vault)**: Protege las claves GPG del bot post-instalación.
+6.  **Cambiar IA**: Alterna entre nube (Groq) e IA local al instante.
+7.  **Diagnóstico del Sistema**: Comprueba la salud del SO, puertos y servicios.
 
 ---
 

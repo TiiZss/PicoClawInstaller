@@ -2,11 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [1.1.0] - 2026-02-22
 ### Added
 - `PicoClawMenu.sh`: Interactive execution menu to guide users safely through the deployment process in the optimal order.
 - `PicoJarvisLocalAI.sh`: Optional installer exclusively focused on local AI inferences. Natively compiles `llama.cpp` for CPU inference, downloads the `Qwen 2.5 0.5B` GGUF model, configures it as a SystemD API endpoint compatible with OpenAI, and installs the offline audio SDK `Picovoice`.
-- `PicoClawRPIInstaller.sh`: Core installer script that handles dependencies, swapping, building PicoClaw from source, creating the configuration for Groq, Ollama and Telegram, and setting up the systemd service.
+- `PicoClawRPIInstaller.sh`: Core installer script that handles dependencies, swapping, building PicoClaw from source, creating the configuration for Groq, Ollama and Telegram, and setting up the systemd service. **Now auto-creates `/workspace/memory/MEMORY.md` to prevent bot read errors.**
 - `PicoJarvisConfiguration.sh`: Configuration script to change hostname to `picojarvis`, setup GPG and `pass` for secrets management, and trigger Telegram alerts on SSH logins.
 - `PicoJarvisHarden.sh`: Security hardening script that changes SSH port to 2222, removes root & password login access, configures UFW firewall, Fail2Ban, unattended upgrades, and applies Sysctl network mitigations.
 - `PicoJarvisBaneo.sh`: Advanced Fail2Ban script implementing progressive ban times using a Fibonacci-like sequence and Telegram notifications for banned IPs.
