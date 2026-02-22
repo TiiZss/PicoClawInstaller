@@ -160,6 +160,9 @@ if ! check_step "configuracion"; then
         API_BASE_USAR="$GROQ_URL"
     fi
 
+    touch "$CONFIG_FILE"
+    chmod 600 "$CONFIG_FILE"
+
     cat <<EOF > "$CONFIG_FILE"
 {
   "agents": {
@@ -203,7 +206,6 @@ if ! check_step "configuracion"; then
 }
 EOF
     chown -R "$APP_USER:$APP_USER" "$CONFIG_DIR"
-    chmod 600 "$CONFIG_FILE"
     mark_step "configuracion"
 else
     echo "⏭️  Paso 4 (Configuración Groq/Ollama) ya completado. Omitiendo..."

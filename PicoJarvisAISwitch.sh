@@ -101,12 +101,14 @@ esac
 
 echo -e "\n⏳ Inyectando nueva configuración en el JSON del bot..."
 
-# Inyectar configuración y asegurarse de crear el bloque si no existe, y setear provider por defecto (necesario en config manuales)
-sudo -u "$APP_USER" jq '.agents.defaults.model = "'"$PICO_MODEL"'" | .agents.defaults.disable_tools = '"$DISABLE_TOOLS"' | .providers.'"$PICO_PROVIDER"'.api_base = "'"$PICO_URL"'" | .providers.'"$PICO_PROVIDER"'.api_key = "'"$PICO_KEY"'" | .providers.default = "'"$PICO_PROVIDER"'" | .model_list[0].model_name = "'"$PICO_MODEL"'" | .model_list[0].model = "'"$PICO_MODEL"'" | .model_list[0].api_key = "'"$PICO_PROVIDER"'" | .model_list[0].api_base = "'"$PICO_URL"'"' "$CONFIG_FILE" > /tmp/picoclaw_config_tmp.json
+# Inyectar configuración temporal en un directorio seguro y no en /tmp/
+sudo -u "$APP_USER" bash -c "touch \"$CONFIG_FILE.tmp\" && chmod 600 \"$CONFIG_FILE.tmp\""
+sudo -u "$APP_USER" bash -c "jq '.agents.defaults.model = \"$PICO_MODEL\" | .agents.defaults.disable_tools = $DISABLE_TOOLS | .providers.$PICO_PROVIDER.api_base = \"$PICO_URL\" | .providers.$PICO_PROVIDER.api_key = \"$PICO_KEY\" | .providers.default = \"$PICO_PROVIDER\" | .model_list[0].model_name = \"$PICO_MODEL\" | .model_list[0].model = \"$PICO_MODEL\" | .model_list[0].api_key = \"$PICO_PROVIDER\" | .model_list[0].api_base = \"$PICO_URL\"' \"$CONFIG_FILE\" > \"$CONFIG_FILE.tmp\""
 
 if [ $? -eq 0 ]; then
-    sudo mv /tmp/picoclaw_config_tmp.json "$CONFIG_FILE"
+    sudo mv "$CONFIG_FILE.tmp" "$CONFIG_FILE"
     sudo chown "$APP_USER:$APP_USER" "$CONFIG_FILE"
+    sudo chmod 600 "$CONFIG_FILE"
     echo -e "${GREEN}✅ Configuración inyectada con éxito.${NC}"
     
     echo "🔄 Reiniciando el servicio de PicoClaw para aplicar los cambios..."

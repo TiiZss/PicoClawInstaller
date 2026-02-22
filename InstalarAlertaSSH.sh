@@ -27,6 +27,9 @@ SCRIPT_PATH="/usr/local/bin/ssh-alert.sh"
 
 echo -e "\n📝 Creando script de alerta en $SCRIPT_PATH..."
 
+touch "$SCRIPT_PATH"
+chmod 700 "$SCRIPT_PATH"
+
 cat <<EOF > "$SCRIPT_PATH"
 #!/bin/bash
 TOKEN="$TOKEN"
@@ -54,7 +57,6 @@ curl -s -X POST "https://api.telegram.org/bot\$TOKEN/sendMessage" \\
      -d "parse_mode=Markdown" > /dev/null 2>&1 || true
 EOF
 
-chmod 700 "$SCRIPT_PATH"
 echo "ALL ALL=(root) NOPASSWD: $SCRIPT_PATH" > /etc/sudoers.d/ssh_alert
 chmod 440 /etc/sudoers.d/ssh_alert
 
