@@ -12,37 +12,64 @@ PUERTO_SSH=2222
 
 trap 'echo -e "\n❌ ERROR: El script ha fallado en la línea $LINENO. Vuelve a ejecutarlo para reanudar desde el último paso completado." >&2' ERR
 
-STATE_FILE="/tmp/picojarvis_baneo.state"
-touch "$STATE_FILE"
+# Reparación silenciosa del hostname si sudo está roto por culpa de /etc/hosts desincronizada
+if ! grep -q "$(hostname)" /etc/hosts; then
+    sudo bash -c "echo '127.0.1.1 $(hostname)' >> /etc/hosts" 2>/dev/null || true
+fi
+
+STATE_FILE="/root/.picojarvis_baneo.state"
+sudo touch "$STATE_FILE" 2>/dev/null || true
 
 function check_step() {
-    grep -q "^$1$" "$STATE_FILE" 2>/dev/null
+    sudo grep -q "^$1$" "$STATE_FILE" 2>/dev/null
 }
 
 function mark_step() {
-    echo "$1" >> "$STATE_FILE"
+    echo "$1" | sudo tee -a "$STATE_FILE" > /dev/null
 }
+
+if sudo test -f "/root/.picoclaw_installer_vars.env" 2>/dev/null; then
+    eval "$(sudo cat /root/.picoclaw_installer_vars.env 2>/dev/null)"
+fi
+VARS_FILE="/root/.picojarvis_config_vars.env"
+if sudo test -f "$VARS_FILE" 2>/dev/null; then
+    eval "$(sudo cat "$VARS_FILE" 2>/dev/null)"
+fi
+APP_USER=${APP_USER:-picojarvis}
 
 echo -e "${GREEN}🕵️ Configurando vigilancia activa y baneo progresivo...${NC}"
 
 # 1. CREAR EL SCRIPT DE NOTIFICACIÓN PARA FAIL2BAN
 if ! check_step "script_notificacion"; then
+    echo -e "\n${GREEN}🚨 Configuración de Alertas Fail2Ban${NC}"
+    while [[ -z "${TELEGRAM_CHAT_ID:-}" ]] || ! [[ "$TELEGRAM_CHAT_ID" =~ ^-?[0-9]+$ ]]; do
+        read -e -i "${TELEGRAM_CHAT_ID:-}" -p "💬 Introduce tu CHAT_ID de Telegram para recibir alertas de baneo: " TELEGRAM_CHAT_ID
+        if ! [[ "$TELEGRAM_CHAT_ID" =~ ^-?[0-9]+$ ]]; then
+            echo -e "${RED}⚠️  El CHAT_ID debe ser un número (puede incluir un signo menos).${NC}"
+            TELEGRAM_CHAT_ID=""
+        fi
+    done
+    
+    # Guardar para futuras ejecuciones
+    sudo sed -i '/^TELEGRAM_CHAT_ID=/d' /root/.picoclaw_installer_vars.env 2>/dev/null || true
+    echo "TELEGRAM_CHAT_ID=\"$TELEGRAM_CHAT_ID\"" | sudo tee -a /root/.picoclaw_installer_vars.env >/dev/null
+
     echo "📝 Creando script de notificación Telegram para Fail2Ban..."
-    sudo tee /usr/local/bin/fail2ban-telegram.sh <<'EOF'
+    sudo tee /usr/local/bin/fail2ban-telegram.sh <<EOF >/dev/null
 #!/bin/bash
 # Extraer token del vault
-TOKEN=$(sudo /usr/bin/cat "/root/.gpg_pass" | sudo -u picojarvis /usr/bin/gpg --quiet --batch --pinentry-mode loopback --passphrase-fd 0 --decrypt "/home/picojarvis/.password-store/telegram/token_jarvis.gpg" 2>/dev/null || true)
-if [ -z "$TOKEN" ]; then exit 0; fi
+TOKEN=\$(sudo /usr/bin/cat "/root/.gpg_pass" | sudo -u $APP_USER /usr/bin/gpg --quiet --batch --pinentry-mode loopback --passphrase-fd 0 --decrypt "/home/$APP_USER/.password-store/telegram/token_jarvis.gpg" 2>/dev/null || true)
+if [ -z "\$TOKEN" ]; then exit 0; fi
 
-ID_CHAT="5530049"
-IP="$1"
+ID_CHAT="$TELEGRAM_CHAT_ID"
+IP="\$1"
 
-MENSAJE="🚫 *PicoJarvis: IP Baneada*%0A%0A*IP:* $IP%0A*Motivo:* Ataque SSH detectado.%0A*Escalado:* Baneo progresivo aplicado."
+MENSAJE="🚫 *PicoJarvis: IP Baneada*%0A%0A*IP:* \$IP%0A*Motivo:* Ataque SSH detectado.%0A*Escalado:* Baneo progresivo aplicado."
 
-curl -s -X POST "https://api.telegram.org/bot$TOKEN/sendMessage" -d "chat_id=$ID_CHAT" -d "text=$MENSAJE" -d "parse_mode=Markdown" > /dev/null 2>&1 || true
+curl -s -X POST "https://api.telegram.org/bot\$TOKEN/sendMessage" -d "chat_id=\$ID_CHAT" -d "text=\$MENSAJE" -d "parse_mode=Markdown" > /dev/null 2>&1 || true
 EOF
 
-    sudo chmod 755 /usr/local/bin/fail2ban-telegram.sh
+    sudo chmod 700 /usr/local/bin/fail2ban-telegram.sh
     mark_step "script_notificacion"
 else
     echo "⏭️  Paso 1 (Notificación Tlgrm) ya completado. Omitiendo..."
@@ -99,5 +126,5 @@ if ! check_step "reinicio"; then
     mark_step "reinicio"
 fi
 
-rm -f "$STATE_FILE"
+sudo rm -f "$STATE_FILE"
 echo -e "${GREEN}✅ ¡Listo! PicoJarvis ahora banea con progresión Fibonacci y te avisa al móvil.${NC}"

@@ -10,7 +10,7 @@ IFS=$'\n\t'
 
 trap 'echo -e "\n❌ ERROR: El script ha fallado en la línea $LINENO. Vuelve a ejecutarlo para reanudar desde el último paso completado." >&2' ERR
 
-STATE_FILE="/tmp/picoclaw_installer.state"
+STATE_FILE="/root/.picoclaw_installer.state"
 touch "$STATE_FILE"
 
 function check_step() {
@@ -26,7 +26,15 @@ if [ "$(id -u)" -ne 0 ]; then
     exit 1
 fi
 
-APP_USER="jarvis"
+VARS_FILE="/root/.picoclaw_installer_vars.env"
+[ -f "$VARS_FILE" ] && source "$VARS_FILE"
+
+echo "===================================================="
+echo "🤖 CONFIGURACIÓN DE TU ASISTENTE"
+echo "===================================================="
+read -e -i "${APP_USER:-picojarvis}" -p "👤 Introduce el nombre de usuario de sistema para el bot: " APP_USER
+APP_USER=$(echo "$APP_USER" | tr -d '[:space:]')
+
 # Crear usuario si no existe
 if ! id "$APP_USER" &>/dev/null; then
     echo "⚙️  Creando usuario $APP_USER..."
@@ -42,11 +50,23 @@ GROQ_URL="https://api.groq.com/openai/v1"
 echo "===================================================="
 echo "🤖 CONFIGURACIÓN DE TU ASISTENTE JARVIS"
 echo "===================================================="
-echo "Puedes usar Groq (Nube) u Ollama (Local/Red)."
-read -p "🔑 [Opcional] Pega tu API Key de Groq (deja en blanco si usas Ollama): " GROQ_KEY
-read -p "🌐 [Opcional] IP/Puerto de Ollama (ej. http://192.0.2.12:11434/v1). Deja blanco para usar Groq: " OLLAMA_URL
-read -p "💬 Pega tu Token de Telegram: " TELEGRAM_TOKEN
+echo "Puedes usar Groq (Velocidad Nube) o tu propia IA Local."
+echo "💡 NOTA: Si vas a instalar la IA Local integrada en la Raspberry"
+echo "   usando el Paso 5 del menú, usa la siguiente URL local:"
+echo "   http://127.0.1.1:11434/v1"
+echo "----------------------------------------------------"
+read -e -i "${GROQ_KEY:-}" -p "🔑 [Opcional] Pega tu API Key de Groq (deja en blanco si usas IA Local): " GROQ_KEY
+read -e -i "${OLLAMA_URL:-}" -p "🌐 [Opcional] Introduce la URL de tu IA (Ej. http://127.0.1.1:11434/v1): " OLLAMA_URL
+read -e -i "${TELEGRAM_TOKEN:-}" -p "💬 Pega tu Token de Telegram: " TELEGRAM_TOKEN
 echo "===================================================="
+
+# Guardar respuestas para reanudaciones en caso de fallo
+cat <<EOF > "$VARS_FILE"
+APP_USER="$APP_USER"
+GROQ_KEY="$GROQ_KEY"
+OLLAMA_URL="$OLLAMA_URL"
+TELEGRAM_TOKEN="$TELEGRAM_TOKEN"
+EOF
 
 # 1. Limpieza total y preparación de RAM (Crítico para compilación RPi 3B)
 if ! check_step "limpieza"; then
@@ -66,8 +86,15 @@ fi
 
 # 2. Descarga y Parche de Compilación
 if ! check_step "descarga"; then
-    # Instalamos log2ram si estuviera disponible, o advertimos al usuario
-    apt-get update && apt-get install -y make build-essential git wget
+    # Instalamos dependencias básicas para compilar PicoClaw y gestionar JSON
+    if [ -z "$(find /root/.apt_updated -mmin -1440 2>/dev/null)" ]; then
+        apt-get update
+        touch /root/.apt_updated
+    else
+        echo "✅ Repositorios CACHEADOS (actualizados en las últimas 24h). Omitiendo apt update..."
+    fi
+    apt-get install -y make build-essential git wget curl jq
+
     sudo -u "$APP_USER" git clone "$REPO_URL" "$INSTALL_DIR"
     cd "$INSTALL_DIR" || exit 1
 
@@ -84,9 +111,27 @@ else
 fi
 
 # 3. Compilación oficial
+# Verificación de oro: Si el binario compilado ya existe, forzamos el salto de paso
+if [ -f "$INSTALL_DIR/build/picoclaw-linux-arm64" ]; then
+    mark_step "compilacion"
+fi
+
 if ! check_step "compilacion"; then
+    # Instalamos Go si no está instalado (Lo hacemos aquí por si se reanuda la instalación)
+    if [ ! -x /usr/local/go/bin/go ]; then
+        echo "🐹 Instalando Go (Golang)..."
+        wget -qO go.tar.gz "https://go.dev/dl/go1.22.5.linux-arm64.tar.gz"
+        tar -C /usr/local -xzf go.tar.gz
+        rm go.tar.gz
+    fi
+
     chown -R "$APP_USER:$APP_USER" "$INSTALL_DIR"
-    sudo -u "$APP_USER" bash -c "export PATH=$PATH:/usr/local/go/bin && make deps && make build"
+    # SOLUCIÓN: Desviar la memoria temporal '$WORK' y Cache estructurándola en la SD Física (128GB) en vez del límite de RAM de `/tmp`
+    sudo -u "$APP_USER" mkdir -p "$INSTALL_DIR/.go_tmp"
+    sudo -u "$APP_USER" mkdir -p "$INSTALL_DIR/.go_cache"
+    sudo -u "$APP_USER" bash -c "export PATH=\$PATH:/usr/local/go/bin && export GOTMPDIR=\"$INSTALL_DIR/.go_tmp\" && export GOCACHE=\"$INSTALL_DIR/.go_cache\" && make deps && make build"
+    # Limpiar basura gigante post-compilación
+    sudo rm -rf "$INSTALL_DIR/.go_tmp" 2>/dev/null || true
     mark_step "compilacion"
 else
     echo "⏭️  Paso 3 (Compilación) ya completado. Omitiendo..."
@@ -94,7 +139,15 @@ fi
 
 # 4. Creación de la Configuración Perfecta (La que finalmente funcionó)
 if ! check_step "configuracion"; then
-    mkdir -p "$CONFIG_DIR/workspace"
+    mkdir -p "$CONFIG_DIR/workspace/memory"
+    
+    # Crear un archivo MEMORY.md inicial para evitar el error de archivo inexistente
+    if [ ! -f "$CONFIG_DIR/workspace/memory/MEMORY.md" ]; then
+        echo "# Memoria Histórica de Jarvis" > "$CONFIG_DIR/workspace/memory/MEMORY.md"
+        echo "Contexto de interacciones importantes y directrices operativas." >> "$CONFIG_DIR/workspace/memory/MEMORY.md"
+        echo "- Idioma: Español." >> "$CONFIG_DIR/workspace/memory/MEMORY.md"
+        echo "- Personalidad: Asistente pragmático, directo y experto en Linux." >> "$CONFIG_DIR/workspace/memory/MEMORY.md"
+    fi
 
     # Determinar el proveedor y modelo principal según el input del usuario
     if [ -n "$OLLAMA_URL" ]; then
@@ -119,6 +172,14 @@ if ! check_step "configuracion"; then
       "max_tool_iterations": 20
     }
   },
+  "model_list": [
+    {
+      "model_name": "$MODELO_POR_DEFECTO",
+      "model": "$MODELO_POR_DEFECTO",
+      "api_key": "$API_KEY_USAR",
+      "api_base": "$API_BASE_USAR"
+    }
+  ],
   "providers": {
     "ollama": {
       "api_key": "ollama",
@@ -148,13 +209,13 @@ else
     echo "⏭️  Paso 4 (Configuración Groq/Ollama) ya completado. Omitiendo..."
 fi
 
-# 5. Configuración del Servicio Systemd con protecciones de seguridad
+# 5. Configuración del Servicio Systemd con la ruta correcta
 if ! check_step "systemd"; then
+    echo "⚙️ Configurando el auto-arranque (Systemd)..."
     cat <<EOF > "/etc/systemd/system/picoclaw.service"
 [Unit]
 Description=PicoClaw Jarvis Bot
-After=network.target network-online.target time-sync.target
-Wants=network-online.target systemd-time-wait-sync.service
+After=network.target
 
 [Service]
 User=$APP_USER
@@ -164,13 +225,6 @@ Environment="HOME=/home/$APP_USER"
 ExecStart=$INSTALL_DIR/build/picoclaw-linux-arm64 gateway
 Restart=always
 RestartSec=10
-
-# Hardening nativo de systemd
-ProtectSystem=full
-PrivateTmp=true
-NoNewPrivileges=true
-ProtectKernelTunables=true
-ProtectControlGroups=true
 
 [Install]
 WantedBy=multi-user.target
@@ -209,7 +263,8 @@ if ! check_step "verificacion"; then
 fi
 
 # Al finalizar con éxito absoluto, limpiamos el estado
-rm -f "$STATE_FILE"
+sudo rm -f "$STATE_FILE"
+sudo rm -f "$VARS_FILE"
 
 echo "===================================================="
 echo "✅ ¡INSTALACIÓN COMPLETADA CON ÉXITO Y VERIFICADA!"

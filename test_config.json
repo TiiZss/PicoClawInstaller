@@ -1,0 +1,40 @@
+{
+  "agents": {
+    "defaults": {
+      "workspace": "~/.picoclaw/workspace",
+      "model": "qwen/qwen3-32b",
+      "system_prompt": "Responde SIEMPRE en texto plano y directo en espa?ol. NUNCA uses formato JSON, XML ni etiquetas como <message>. Act?a como un asistente humano natural.",
+      "max_tokens": 8192,
+      "temperature": 0.7,
+      "max_tool_iterations": 20
+    }
+  },
+  "model_list": [
+    {
+      "model_name": "qwen/qwen3-32b",
+      "model": "qwen/qwen3-32b",
+      "api_key": "groq_key_here",
+      "api_base": "https://api.groq.com/openai/v1"
+    }
+  ],
+  "providers": {
+    "ollama": {
+      "api_key": "ollama",
+      "api_base": "http://127.0.1.1:11434/v1"
+    },
+    "openai": {
+      "api_key": "groq_key_here",
+      "api_base": "https://api.groq.com/openai/v1"
+    }
+  },
+  "channels": {
+    "telegram": {
+      "enabled": true,
+      "token": "tokentokentoken"
+    }
+  },
+  "gateway": {
+    "host": "0.0.0.0",
+    "port": 18790
+  }
+}

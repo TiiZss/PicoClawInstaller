@@ -21,16 +21,18 @@ function mostrar_menu() {
     echo -e "${CYAN}================================================================${NC}"
     echo -e "${GREEN}      🤖 ASISTENTE DE DESPLIEGUE PICOJARVIS (RPi 3B) 🤖     ${NC}"
     echo -e "${CYAN}================================================================${NC}"
-    echo -e "El orden recomendado de ejecución es desde el Paso 1 al Paso 4."
+    echo -e "El orden recomendado de ejecución es secuencial (Paso 1 al Paso 5)."
     echo ""
-    echo -e "${YELLOW}1.${NC} 💻 Instalar PicoClaw (Requiere Sudo. Configura IA y Systemd)"
-    echo -e "${YELLOW}2.${NC} 👤 Configurar Entorno (Vault, Nombres, Permisos GPG)"
-    echo -e "${YELLOW}3.${NC} 🛡️  Hardenizar Sistema (SSH, Sysctl, UFW. ${RED}Cuidado: Desactiva contraseñas${NC})"
-    echo -e "${YELLOW}4.${NC} 🚫 Configurar Baneo Progresivo (Fail2Ban con Fibonacci y Telegram)"
-    echo -e "${YELLOW}5.${NC} 🧠 Instalar Llama.cpp + Qwen 2.5 + Picovoice SDK ${YELLOW}[NUEVO]${NC}"
-    echo -e "${YELLOW}6.${NC} 🧹 Salir del Menú"
+    echo -e "${YELLOW}1.${NC} 🛡️  Hardenizar Sistema (SSH, Sysctl, UFW. ${RED}Cuidado: Desactiva contraseñas${NC})"
+    echo -e "${YELLOW}2.${NC} 🚫 Configurar Baneo Progresivo (Fail2Ban con Fibonacci y Telegram)"
+    echo -e "${YELLOW}3.${NC} 🧠 Instalar Llama.cpp + Qwen 2.5 + Picovoice SDK ${YELLOW}[NUEVO]${NC}"
+    echo -e "${YELLOW}4.${NC} 💻 Instalar PicoClaw (Requiere Sudo. Configura IA y Systemd)"
+    echo -e "${YELLOW}5.${NC} 👤 Configurar Entorno Secreto (Vault, Nombres, Permisos GPG)"
+    echo -e "${YELLOW}6.${NC} 🔄 Cambiar de Modelo de IA (Groq / Llama.cpp / Ollama Red)"
+    echo -e "${YELLOW}7.${NC} 🩺 Diagnóstico del Sistema (Comprobar Salud y Servicios)"
+    echo -e "${YELLOW}0.${NC} 🧹 Salir del Menú"
     echo -e "${CYAN}================================================================${NC}"
-    echo -n -e "Elige una opción ${YELLOW}[1-6]${NC}: "
+    echo -n -e "Elige una opción ${YELLOW}[0-7]${NC}: "
 }
 
 function ejecutar_script() {
@@ -69,31 +71,39 @@ while true; do
     read opcion
     case $opcion in
         1)
-            # El instalador comprueba internamente el id -u, usamos sudo
-            ejecutar_script "PicoClawRPIInstaller.sh" "yes"
-            ;;
-        2)
-            # La config inicial asume permisos, mejor correr sin sudo forzado y que pida sudo internamente
-            ejecutar_script "PicoJarvisConfiguration.sh" "no"
-            ;;
-        3)
             # Hardening requiere tocar sshd y kernel
             ejecutar_script "PicoJarvisHarden.sh" "no"
             ;;
-        4)
+        2)
             # Baneo por Fail2ban
             ejecutar_script "PicoJarvisBaneo.sh" "no"
             ;;
-        5)
+        3)
             # Motor IA Local y SDK de voz
             ejecutar_script "PicoJarvisLocalAI.sh" "yes"
             ;;
+        4)
+            # El instalador comprueba internamente el id -u, usamos sudo
+            ejecutar_script "PicoClawRPIInstaller.sh" "yes"
+            ;;
+        5)
+            # La config confidencial asume permisos de usuario (Fortificar bot)
+            ejecutar_script "PicoJarvisConfiguration.sh" "no"
+            ;;
         6)
+            # Cambiador de IA en caliente
+            ejecutar_script "PicoJarvisAISwitch.sh" "yes"
+            ;;
+        7)
+            # Herramienta de Diagnóstico del Sistema
+            ejecutar_script "PicoJarvisDiagnostic.sh" "yes"
+            ;;
+        0)
             echo -e "\n${GREEN}👋 ¡Hasta la próxima!${NC}"
             exit 0
             ;;
         *)
-            echo -e "\n${RED}⚠️  Opción no válida. Por favor, selecciona un número del 1 al 6.${NC}"
+            echo -e "\n${RED}⚠️  Opción no válida. Por favor, selecciona un número del 0 al 7.${NC}"
             sleep 2
             ;;
     esac
