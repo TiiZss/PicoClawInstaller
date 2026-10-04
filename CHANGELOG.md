@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.4] - 2026-10-04
+
+### Changed
+- The Ollama network server prompt no longer pre-fills a specific LAN address; it uses your saved `OLLAMA_NETWORK_URL` or a placeholder. Example IPs use the documentation range.
+
 ## [1.1.3] - 2026-02-22
 ### Changed
 - **AI/Cognitive Optimizations for RPi 3B**:
